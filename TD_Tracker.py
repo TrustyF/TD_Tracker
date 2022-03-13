@@ -1,6 +1,7 @@
 import json
 import cassiopeia as cas
 import config
+from colorama import Fore, Style
 
 resources_path = "./"
 
@@ -12,100 +13,111 @@ def write_to_json(path, file_name, data):
 
 
 class TDTrackerV02:
-    def __init__(self, summoner_name, match_amount):
+    def __init__(self, summoner_names, match_amount):
         # make links
-        self.summoner_name = summoner_name
+        self.summoner_names = summoner_names
         self.match_amount = match_amount
         # Cassiopeia setup
         cas.set_riot_api_key(config.api_key)
-        # summoner vars
-        self.summoner_object = cas.Summoner(name=self.summoner_name, region=cas.data.Region("EUW"))
-        self.summoner_history = cas.MatchHistory(continent=cas.data.Continent("EUROPE"),
-                                                 puuid=self.summoner_object.puuid,
-                                                 queue=cas.Queue.ranked_solo_fives, begin_index=0, end_index=2)
 
     def run(self):
-        # setup vars
-        player_info = []
-        # load from json
-        match_info = {}
-        try:
-            match_info = json.load(open('all_match_info.json'))
-            match_info = match_info[self.summoner_name]
-        except KeyError:
-            pass
 
-        # helper methods
-        def calc_winrate(part):
-            wins = part.summoner.league_entries.fives.wins
-            losses = part.summoner.league_entries.fives.losses
-            winrate = round((wins / (wins + losses)) * 100, 2)
-            return winrate
+        # iterate through all summoner names
+        for summoner_name in self.summoner_names:
 
-        def format_rank(part):
-            rank = ''
-            tier = part.summoner.league_entries.fives.tier.value
-            division = part.summoner.league_entries.fives.division.value
-            rank = "{} {}".format(tier, division)
-            return rank
+            def load_vars_from_json() -> dict:
+                info = {}
+                try:
+                    info = json.load(open('all_match_info.json'))
+                    # check if properly initialized
+                    for name in self.summoner_names:
+                        if name not in info:
+                            info[name] = {}
+                except json.decoder.JSONDecodeError:
+                    # initialize empty dict
+                    for name in self.summoner_names:
+                        if name not in info:
+                            info[name] = {}
+                return info
 
-        # iterate through match history
-        for i, match in enumerate(self.summoner_history):
-            # idk why the match.id gets formatted before reaching the bottom, setting it here
-            current_match_id = match.id
+            # setup vars
+            player_info = []
+            # load from json if available, else return empty dict with player names
+            match_info = load_vars_from_json()
 
-            # limit matches
-            if i == self.match_amount:
-                break
+            # summoner vars
+            summoner_object = cas.Summoner(name=summoner_name, region=cas.data.Region("EUW"))
+            summoner_history = cas.MatchHistory(continent=cas.data.Continent("EUROPE"),
+                                                puuid=summoner_object.puuid,
+                                                queue=cas.Queue.ranked_solo_fives, begin_index=0,
+                                                end_index=self.match_amount + 1)
 
-            # look for match_id in json
-            if current_match_id in match_info:
-                break
+            # helper methods
+            def calc_winrate(part):
+                try:
+                    wins = part.summoner.league_entries.fives.wins
+                    losses = part.summoner.league_entries.fives.losses
+                    winrate = round((wins / (wins + losses)) * 100, 2)
+                except ValueError:
+                    winrate = 0
+                return winrate
 
-            # iterate through participants in the match
-            for j, participant in enumerate(match.participants):
+            def format_rank(part):
+                try:
+                    tier = part.summoner.league_entries.fives.tier.value
+                    division = part.summoner.league_entries.fives.division.value
+                    rank = "{} {}".format(tier, division)
+                except ValueError:
+                    rank = 'UNRANKED'
+                return rank
 
-                # enforce limit, sometimes more than 10 participants are loaded
-                if j > 10:
+            def get_team_from_iter(it):
+                if it < 5:
+                    team = 'red'
+                else:
+                    team = 'blue'
+                return team
+
+            # iterate through match history
+            for i, match in enumerate(summoner_history):
+                # idk why the match.id gets formatted before reaching the bottom, setting it here
+                current_match_id = match.id
+
+                # limit matches
+                if i == self.match_amount:
                     break
 
-                # check in player has ranked stats
-                try:
+                # look for match_id in json
+                if current_match_id in match_info[summoner_name]:
+                    print(f"{Fore.GREEN}Match found,skipping...{Style.RESET_ALL}")
+                    break
 
+                # iterate through participants in the match
+                for j, participant in enumerate(match.participants):
+                    # set player stats
                     player_info.append({
                         'name': participant.summoner.name,
                         'rank': format_rank(participant),
                         'winrate': calc_winrate(participant),
+                        'team': get_team_from_iter(j)
+
                     })
 
-                # add unranked if stats don't exist
-                except:
+                # add to match list
+                match_info[summoner_name] = {current_match_id: player_info}
 
-                    player_info.append({
-                        'name': participant.summoner.name,
-                        'rank': 'UNRANKED',
-                        'winrate': 0,
-                    })
-
-            # add to match list
-            match_info[self.summoner_name] = {current_match_id: player_info}
-
-        # write to json
-        write_to_json(resources_path, 'all_match_info', match_info)
-
-    def debug(self):
-        pass
-
-    def empty_json(self):
-        empty = {}
-        write_to_json(resources_path, 'all_match_info', empty)
+            # write to json
+            write_to_json(resources_path, 'all_match_info', match_info)
 
 
 if __name__ == "__main__":
     # noinspection SpellCheckingInspection
+
     # setup players
-    matches = [TDTrackerV02("TURBO JACANA", 1), TDTrackerV02("TURBO Trusty", 1), TDTrackerV02("TURBO ALUCO", 1)]
-    # run all players
-    matches[0].empty_json()
-    for player in matches:
-        player.run()
+    players_backup = ['TURBO JACANA', 'TURBO Trusty', 'TURBO ALUCO']
+    players = ['TURBO JACANA', 'TURBO Trusty', 'TURBO ALUCO']
+    matches = 1
+
+    # setup object
+    TD_Object = TDTrackerV02(players, matches)
+    TD_Object.run()
