@@ -1,12 +1,6 @@
 import json
-import pprint
-import logging
-import coloredlogs
-import time
 import cassiopeia as cas
 import config
-import sys
-import os
 
 resources_path = "./"
 
@@ -22,19 +16,10 @@ class TDTrackerV02:
         # make links
         self.summoner_name = summoner_name
         self.match_amount = match_amount
-        # region vars
-        self.region = cas.data.Region("EUW")
-        self.continent = cas.data.Continent('EUROPE')
         # Cassiopeia setup
         cas.set_riot_api_key(config.api_key)
         # summoner vars
-        self.summoner_object = cas.Summoner(name=self.summoner_name, region=self.region)
-        self.summoner_puuid = self.summoner_object.puuid
-        # self.summoner_match_history_ids = cas.get_match_history(begin_index=0,
-        #                                                         end_index=self.match_amount,
-        #                                                         continent=self.continent,
-        #                                                         puuid=self.summoner_puuid,
-        #                                                         queue=cas.data.Queue('RANKED_SOLO_5x5'))
+        self.summoner_object = cas.Summoner(name=self.summoner_name, region=cas.data.Region("EUW"))
 
     def run(self):
         # setup vars
@@ -89,8 +74,6 @@ class TDTrackerV02:
 
         # write to json
         write_to_json(resources_path, 'all_match_info', match_info)
-
-    # summoner_match_history = summoner_object.match_history(queue=420, continent=self.region)
 
     def debug(self):
         pass
