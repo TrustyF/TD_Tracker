@@ -78,6 +78,23 @@ class TDTrackerV02:
                     team = 'blue'
                 return team
 
+            def calc_team_winrate():
+                # vars
+                team_red_winrate = 0
+                team_blue_winrate = 0
+                # iterate through info to extract winrate
+                for player in player_info:
+                    print(player)
+                    if player['team'] == 'red':
+                        team_red_winrate += player['winrate']
+                    else:
+                        team_blue_winrate += player['winrate']
+                # cleanup
+                team_red_winrate = round(team_red_winrate / 5, 2)
+                team_blue_winrate = round(team_blue_winrate / 5, 2)
+
+                return {'red_team_winrate': team_red_winrate, 'blue_team_winrate': team_blue_winrate}
+
             # iterate through match history
             for i, match in enumerate(summoner_history):
                 # idk why the match.id gets formatted before reaching the bottom, setting it here
@@ -94,18 +111,23 @@ class TDTrackerV02:
 
                 # iterate through participants in the match
                 for j, participant in enumerate(match.participants):
+                    # vars
+                    name = participant.summoner.name
+                    rank = format_rank(participant)
+                    winrate = calc_winrate(participant)
+                    team = get_team_from_iter(j)
                     # set player stats
                     player_info.append({
-                        'name': participant.summoner.name,
-                        'rank': format_rank(participant),
-                        'winrate': calc_winrate(participant),
-                        'team': get_team_from_iter(j)
+                        'name': name,
+                        'rank': rank,
+                        'winrate': winrate,
+                        'team': team
 
                     })
 
-                # add to match list
-                match_info[summoner_name] = {current_match_id: player_info}
-
+                # add to match list + team winrate
+                match_info[summoner_name] = {current_match_id: {'avg_winrate': calc_team_winrate(),
+                                                                'players': player_info}}
             # write to json
             write_to_json(resources_path, 'all_match_info', match_info)
 
@@ -114,8 +136,8 @@ if __name__ == "__main__":
     # noinspection SpellCheckingInspection
 
     # setup players
-    players_backup = ['TURBO JACANA', 'TURBO Trusty', 'TURBO ALUCO']
-    players = ['TURBO JACANA', 'TURBO Trusty', 'TURBO ALUCO']
+    players_Backup = ['TURBO JACANA', 'TURBO Trusty', 'TURBO ALUCO']
+    players = ['TURBO JACANA']
     matches = 1
 
     # setup object
