@@ -78,22 +78,33 @@ class TDTrackerV02:
                     team = 'blue'
                 return team
 
+            def add_to_respective_team():
+                # add player to respective team
+                team_red = []
+                team_blue = []
+                for player in player_info:
+                    if player['team'] == 'red':
+                        team_red.append(player)
+                    else:
+                        team_blue.append(player)
+
+                return team_red, team_blue
+
             def calc_team_winrate():
-                # vars
-                team_red_winrate = 0
-                team_blue_winrate = 0
+                # calc team winrate
+                team_red_wr = 0
+                team_blue_wr = 0
                 # iterate through info to extract winrate
                 for player in player_info:
-                    print(player)
                     if player['team'] == 'red':
-                        team_red_winrate += player['winrate']
+                        team_red_wr += player['winrate']
                     else:
-                        team_blue_winrate += player['winrate']
+                        team_blue_wr += player['winrate']
                 # cleanup
-                team_red_winrate = round(team_red_winrate / 5, 2)
-                team_blue_winrate = round(team_blue_winrate / 5, 2)
+                team_red_wr = round(team_red_wr / 5, 2)
+                team_blue_wr = round(team_blue_wr / 5, 2)
 
-                return {'red_team_winrate': team_red_winrate, 'blue_team_winrate': team_blue_winrate}
+                return team_red_wr, team_blue_wr
 
             # iterate through match history
             for i, match in enumerate(summoner_history):
@@ -122,12 +133,25 @@ class TDTrackerV02:
                         'rank': rank,
                         'winrate': winrate,
                         'team': team
-
                     })
 
-                # add to match list + team winrate
-                match_info[summoner_name] = {current_match_id: {'avg_winrate': calc_team_winrate(),
-                                                                'players': player_info}}
+                team_red = add_to_respective_team()[0]
+                team_blue = add_to_respective_team()[1]
+
+                team_red_wr = calc_team_winrate()[0]
+                team_blue_wr = calc_team_winrate()[1]
+
+                # add to match
+                match_info[summoner_name] = {current_match_id: {
+                    'team_red': {
+                        'avg_winrate': team_red_wr,
+                        'players': team_red
+                    },
+                    'team_blue': {
+                        'avg_winrate': team_blue_wr,
+                        'players': team_blue
+                    }
+                }}
             # write to json
             write_to_json(resources_path, 'all_match_info', match_info)
 
