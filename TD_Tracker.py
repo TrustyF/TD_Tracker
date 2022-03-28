@@ -149,12 +149,15 @@ class TDTrackerV02:
                         rank = format_rank(participant)
                         winrate = calc_winrate(participant)
                         team = get_team_from_iter(j)
+                        match_result = participant.stats.win
+
                         # set player stats
                         player_info.append({
                             'name': name,
                             'rank': rank,
                             'winrate': winrate,
-                            'team': team
+                            'team': team,
+                            'result': match_result
                         })
 
                     team_red = add_to_respective_team()[0]
@@ -163,14 +166,19 @@ class TDTrackerV02:
                     team_red_wr = calc_team_winrate()[0]
                     team_blue_wr = calc_team_winrate()[1]
 
+                    team_red_result = player_info[0]['result']
+                    team_blue_result = player_info[5]['result']
+
                     # add to match
                     match_info[summoner_name][current_match_id] = {
                         'team_red': {
                             'avg_winrate': team_red_wr,
+                            'result': team_red_result,
                             'players': team_red
                         },
                         'team_blue': {
                             'avg_winrate': team_blue_wr,
+                            'result': team_blue_result,
                             'players': team_blue
                         }
                     }
@@ -226,18 +234,18 @@ def start(c_player):
 
                         return wr_color
 
+                    # set vars
                     name = player['name']
                     rank = player['rank']
                     winrate = player['winrate']
                     team = player['team']
-
+                    # result = player['result']
                     winrate_color = set_winrate_color(winrate)
-
                     display_info = '{} {}'.format(name, winrate)
 
                     # draw name boxes
                     name_box = pygame.Rect(width * j,
-                                           (((height * i) * 2) + match_offset + (height * m)) + (100 * scroll),
+                                           (((height * i) * 2) + (height * m)) + (match_offset * i) + (100 * scroll),
                                            width,
                                            height)
                     pygame.draw.rect(screen, winrate_color, name_box)
@@ -255,7 +263,7 @@ if __name__ == "__main__":
     # setup players
     players_Backup = ['TURBO JACANA', 'TURBO Trusty', 'TURBO ALUCO']
     players = ['TURBO Trusty']
-    matches = 5
+    matches = 3
 
     # setup object
     TD_Object = TDTrackerV02(players, matches)
