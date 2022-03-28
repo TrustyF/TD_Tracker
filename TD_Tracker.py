@@ -85,7 +85,7 @@ class TDTrackerV02:
                         losses = part.summoner.league_entries.fives.losses
                         winrate = round((wins / (wins + losses)) * 100, 2)
                     except ValueError:
-                        winrate = 0
+                        winrate = 50
                     return winrate
 
                 def format_rank(part):
@@ -239,22 +239,84 @@ def start(c_player):
                     rank = player['rank']
                     winrate = player['winrate']
                     team = player['team']
-                    # result = player['result']
+                    result = player['result']
                     winrate_color = set_winrate_color(winrate)
                     display_info = '{} {}'.format(name, winrate)
 
                     # draw name boxes
                     name_box = pygame.Rect(width * j,
-                                           (((height * i) * 2) + (height * m)) + (match_offset * i) + (100 * scroll),
+                                           (((height * i) * 2) + (height * m)) + match_offset + (match_offset * i) + (
+                                                   100 * scroll),
                                            width,
-                                           height)
+                                           height - 5)
                     pygame.draw.rect(screen, winrate_color, name_box)
                     # text
                     text_name = font.render(display_info, True, (0, 0, 0))
                     box_center_name = text_name.get_rect(center=name_box.center)
                     screen.blit(text_name, box_center_name)
 
+                    # draw result box
+                    if name == c_player:
+
+                        winrate_color = set_winrate_color(winrate)
+                        blue_average_winrate = all_match_info[match_key]['team_blue']['avg_winrate']
+                        red_average_winrate = all_match_info[match_key]['team_red']['avg_winrate']
+                        blue_average_color = set_winrate_color(blue_average_winrate)
+                        red_average_color = set_winrate_color(red_average_winrate)
+
+                        def set_win_color(res):
+                            if res:
+                                res_color = 'green'
+                            else:
+                                res_color = 'red'
+                            return res_color
+
+                        result_color = set_win_color(result)
+
+                        # draw win box
+                        win_box = pygame.Rect((win_width - (width / 3)) - 5, (((height * 2) * i) + 5) + (match_offset *
+                                                                                                         i) + (
+                                                      100 * scroll),
+                                              width / 3,
+                                              (height * 2) - 5)
+                        pygame.draw.rect(screen, result_color, win_box)
+
+                        # draw avg winrate box ally
+                        avg_box = pygame.Rect((win_width - (width / 3)) - 55,
+                                              (((height * 2) * i) + 5) + (match_offset * i) + (100 *
+                                                                                               scroll),
+                                              (width / 2) - 15,
+                                              height - 5)
+                        pygame.draw.rect(screen, red_average_color, avg_box)
+                        text_avg = font.render(str(red_average_winrate), True, (0, 0, 0))
+                        box_center_avg = text_avg.get_rect(center=avg_box.center)
+                        screen.blit(text_avg, box_center_avg)
+                        # draw avg winrate box enemy
+                        avg_box2 = pygame.Rect((win_width - (width / 3)) - 55,
+                                               (((height * 2) * i) + 5) + 50 + (match_offset * i) + (100 * scroll),
+                                               (width / 2) - 15,
+                                               height - 5)
+                        pygame.draw.rect(screen, blue_average_color, avg_box2)
+                        text_avg2 = font.render(str(blue_average_winrate), True, (0, 0, 0))
+                        box_center_avg2 = text_avg2.get_rect(center=avg_box2.center)
+                        screen.blit(text_avg2, box_center_avg2)
+
+                        marker_col = (255, 255, 0)
+
+                        # draw marker for summoner
+                        team_allegiance = ''
+                        for players in all_match_info[match_key]['team_blue']['players']['name']:
+                            print(players)
+
+                            name_box = pygame.Rect(width * j,
+                                                   (((height * i) * 2) + match_offset) + (match_offset * i) + (
+                                                           100 * scroll),
+                                                   width,
+                                                   3)
+                            pygame.draw.rect(screen, marker_col, name_box)
+
         pygame.display.update()
+        pygame.quit()
 
 
 if __name__ == "__main__":
@@ -263,7 +325,7 @@ if __name__ == "__main__":
     # setup players
     players_Backup = ['TURBO JACANA', 'TURBO Trusty', 'TURBO ALUCO']
     players = ['TURBO Trusty']
-    matches = 3
+    matches = 2
 
     # setup object
     TD_Object = TDTrackerV02(players, matches)
