@@ -5,6 +5,7 @@ from colorama import Fore, Style
 import pygame
 import sys, os
 import pprint
+import time
 
 resources_path = "./"
 
@@ -258,12 +259,6 @@ def start(c_player):
                     # draw result box
                     if name == c_player:
 
-                        winrate_color = set_winrate_color(winrate)
-                        blue_average_winrate = all_match_info[match_key]['team_blue']['avg_winrate']
-                        red_average_winrate = all_match_info[match_key]['team_red']['avg_winrate']
-                        blue_average_color = set_winrate_color(blue_average_winrate)
-                        red_average_color = set_winrate_color(red_average_winrate)
-
                         def set_win_color(res):
                             if res:
                                 res_color = 'green'
@@ -271,7 +266,20 @@ def start(c_player):
                                 res_color = 'red'
                             return res_color
 
+                        def calc_differential(side, b_wr, r_wr, res):
+                            difference = round(abs(b_wr - r_wr), 1)
+                            out = True
+                            if difference < 5:
+                                out = False
+                            return out
+
+                        winrate_color = set_winrate_color(winrate)
+                        blue_average_winrate = all_match_info[match_key]['team_blue']['avg_winrate']
+                        red_average_winrate = all_match_info[match_key]['team_red']['avg_winrate']
+                        blue_average_color = set_winrate_color(blue_average_winrate)
+                        red_average_color = set_winrate_color(red_average_winrate)
                         result_color = set_win_color(result)
+                        team_diff = calc_differential(m, blue_average_winrate, red_average_winrate, result)
 
                         # draw win box
                         win_box = pygame.Rect((win_width - (width / 3)) - 5, (((height * 2) * i) + 5) + (match_offset *
@@ -280,6 +288,16 @@ def start(c_player):
                                               width / 3,
                                               (height * 2) - 5)
                         pygame.draw.rect(screen, result_color, win_box)
+
+                        # difference marker
+                        if team_diff:
+                            diff_box = pygame.Rect((win_width - (width / 3)) - 5,
+                                                   (((height * 2) * i) + 5) + (match_offset *
+                                                                               i) + (
+                                                           100 * scroll),
+                                                   10,
+                                                   10)
+                            pygame.draw.rect(screen, (255, 255, 0), diff_box)
 
                         # draw avg winrate box ally
                         avg_box = pygame.Rect((win_width - (width / 3)) - 55,
@@ -304,19 +322,23 @@ def start(c_player):
                         marker_col = (255, 255, 0)
 
                         # draw marker for summoner
-                        team_allegiance = ''
-                        for players in all_match_info[match_key]['team_blue']['players']['name']:
-                            print(players)
+                        name_box = pygame.Rect(width * j,
+                                               (((height * i) * 2) + match_offset) + (match_offset * i) + (height * m)
+                                               + (
+                                                       100 * scroll),
+                                               width,
+                                               3)
+                        pygame.draw.rect(screen, marker_col, name_box)
 
-                            name_box = pygame.Rect(width * j,
-                                                   (((height * i) * 2) + match_offset) + (match_offset * i) + (
-                                                           100 * scroll),
-                                                   width,
-                                                   3)
-                            pygame.draw.rect(screen, marker_col, name_box)
+                        # draw marker for winrate
+                        name_box2 = pygame.Rect((win_width - (width / 3)) - 55,
+                                                (((height * i) * 2) + match_offset) + (match_offset * i) + (height * m)
+                                                + (100 * scroll),
+                                                (width / 2) - 15,
+                                                3)
+                        pygame.draw.rect(screen, marker_col, name_box2)
 
         pygame.display.update()
-        pygame.quit()
 
 
 if __name__ == "__main__":
@@ -324,12 +346,12 @@ if __name__ == "__main__":
 
     # setup players
     players_Backup = ['TURBO JACANA', 'TURBO Trusty', 'TURBO ALUCO']
-    players = ['TURBO Trusty']
-    matches = 2
+    players = ['TURBO JACANA', 'TURBO Trusty', 'TURBO ALUCO']
+    matches = 20
 
     # setup object
     TD_Object = TDTrackerV02(players, matches)
     TD_Object.run()
 
     # start pygame
-    start('TURBO Trusty')
+    start(players[2])
